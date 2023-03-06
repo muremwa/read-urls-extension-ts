@@ -1,0 +1,80 @@
+{
+    "name": "read-urls",
+    "displayName": "Django URLS Reader",
+    "description": "Read a django project's URL configurations.",
+    "version": "3.0.0",
+    "publisher": "muremwa",
+    "icon": "media/ex_icon.png",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/muremwa/read-urls-extension-ts.git"
+    },
+    "engines": {
+        "vscode": "^1.75.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onView:project-urls"
+    ],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "views": {
+            "django-urls": [
+                {
+                    "id": "project-urls",
+                    "name": "Detected configurations",
+                    "icon": "media/icons.svg",
+                    "contextualTitle": "config-explorer"
+                }
+            ]
+        },
+        "viewsWelcome": [
+            {
+                "view": "project-urls",
+                "contents": "No URL configurations Detected. \n Read the django documentation on [urls](https://docs.djangoproject.com/en/4.1/topics/http/urls/)"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "django-urls",
+                    "title": "Your Django project URLs",
+                    "icon": "media/icon.svg"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "webpack",
+        "watch": "webpack --watch",
+        "package": "webpack --mode production --devtool hidden-source-map",
+        "compile-tests": "tsc -p . --outDir out",
+        "watch-tests": "tsc -p . -w --outDir out",
+        "pretest": "npm run compile-tests && npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/glob": "^8.0.1",
+        "@types/mocha": "^10.0.1",
+        "@types/node": "16.x",
+        "@types/vscode": "^1.75.0",
+        "@typescript-eslint/eslint-plugin": "^5.49.0",
+        "@typescript-eslint/parser": "^5.49.0",
+        "@vscode/test-electron": "^2.2.2",
+        "eslint": "^8.33.0",
+        "glob": "^8.1.0",
+        "mocha": "^10.1.0",
+        "ts-loader": "^9.4.2",
+        "typescript": "^4.9.4",
+        "webpack": "^5.75.0",
+        "webpack-cli": "^5.0.1"
+    },
+    "dependencies": {
+        "clipboardy": "^3.0.0",
+        "walk": "^2.3.15"
+    }
+}

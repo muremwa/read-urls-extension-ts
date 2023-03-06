@@ -1,0 +1,12 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+
+.vscode/**
+test/**
+vsc-extension-quickstart.md
+**/jsconfig.json
+**/*.map
+simple/*
