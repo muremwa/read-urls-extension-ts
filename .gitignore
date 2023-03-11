@@ -10,3 +10,7 @@ vsc-extension-quickstart.md
 **/jsconfig.json
 **/*.map
 simple/*
+.idea/*
+
+src/**/*.js
+p.*
