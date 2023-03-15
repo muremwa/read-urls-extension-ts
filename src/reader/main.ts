@@ -15,6 +15,8 @@ export class ConfigReader {
         ['path', 'path']
     ]);
 
+    constructor(private errorCallback?: (message: string) => void) {}
+
     private static cleanTextBeforeProcessing (text: string): string {
         // Remove new lines, and python comments
         return text.replace(
@@ -71,11 +73,19 @@ export class ConfigReader {
             `READER_FILE_PATH_${filePath}`
         );
 
+        let urls: string[] = []
+
         // get URLS from urlpatterns
-        const urlPatterns = braceReader(formattedText, braces.SQUARE_BRACKET_OPEN);
-        const urls = urlPatterns.map((pattern) => {
-            return braceReader(pattern, braces.ROUND_BRACKET_OPEN);
-        }).flat();
+        try {
+            const urlPatterns = braceReader(formattedText, braces.SQUARE_BRACKET_OPEN);
+            urls = urlPatterns.map((pattern) => {
+                return braceReader(pattern, braces.ROUND_BRACKET_OPEN);
+            }).flat();
+        } catch (error) {
+            if (error && error instanceof Error && this.errorCallback) {
+                this.errorCallback(`${error.message}\n${filePath}`);
+            }
+        }
 
         return { [appName]: urls }
     }
