@@ -1,5 +1,7 @@
 import { braceReader, braces } from "./utilities";
 import { ProcessedURL, UrlArgument, pathConverterTypes } from './main.d';
+import { WalkStatEventCallback, walkSync } from "walk";
+import { join } from 'path';
 
 export class ConfigReader {
     private patterns = {
@@ -7,7 +9,7 @@ export class ConfigReader {
         reverseName: /\bname=['"](?<name>.*?)['"]/,
         urlArgs: /<.*?>/g
     }
-    pathConverters = new Map<string, pathConverterTypes>([
+    private pathConverters = new Map<string, pathConverterTypes>([
         ['slug', 'slug'],
         ['int', 'integer'],
         ['str', 'string'],
@@ -118,5 +120,29 @@ export class ConfigReader {
         });
 
         return processedConfigurations;
+    }
+}
+
+
+export class FilesFinder {
+
+    /**
+     * Get a home directory of django project and find all 'urls.py'
+     * */
+    urlConfigsFinder(filePath: string): Array<string> {
+        const urlPaths: Array<string> = [];
+
+        const finderCallback: WalkStatEventCallback = (base, details, next) => {
+            if(details.type === "file" && details.name === "urls.py") {
+                urlPaths.push(join(base, details.name));
+            }
+            next();
+        }
+        walkSync(filePath, {
+            listeners: {
+                file: finderCallback
+            }
+        })
+        return urlPaths;
     }
 }
