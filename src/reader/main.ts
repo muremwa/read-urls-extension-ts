@@ -125,6 +125,10 @@ export class ConfigReader {
 
 
 export class FilesFinder {
+    private ignoredFolders = [
+        '.idea','.vscode', '.git', '__pycache__', 'templates',
+        'tests', 'media', 'static', 'migrations', 'node_modules'
+    ];
 
     /**
      * Get a home directory of django project and find all 'urls.py'
@@ -139,6 +143,7 @@ export class FilesFinder {
             next();
         }
         walkSync(filePath, {
+            filters: this.ignoredFolders,
             listeners: {
                 file: finderCallback
             }
