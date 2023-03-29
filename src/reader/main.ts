@@ -4,6 +4,9 @@ import { WalkStatArrayEventCallback, walkSync } from "walk";
 import { join } from 'path';
 
 export class ConfigReader {
+    /**
+     * Read the configurations of a project
+     * */
     private patterns = {
         appName: /app_name.*?['"](?<appName>.*?)['"]/,
         reverseName: /\bname=['"](?<name>.*?)['"]/,
@@ -125,6 +128,11 @@ export class ConfigReader {
 
 
 export class FilesFinder {
+    /**
+     * Find the files where django url configurations are declared
+     * TODO: Find an alternative to walk, since it traverses the directories bottom-to-top
+     * */
+
     private ignoredFolders = [
         '.idea','.vscode', '.git', '__pycache__', 'templates',
         'tests', 'media', 'static', 'migrations', 'node_modules',
@@ -152,6 +160,9 @@ export class FilesFinder {
         return urlPaths;
     }
 
+    /**
+     * Find the django project home directory.
+     * */
     projectFinder(path: string): string | null {
         let projectPath = null;
 
