@@ -128,13 +128,13 @@ export class FilesFinder {
     private ignoredFolders = [
         '.idea','.vscode', '.git', '__pycache__', 'templates',
         'tests', 'media', 'static', 'migrations', 'node_modules',
-        'templatetags'
+        'templatetags', 'Scripts', 'Lib', 'Include'
     ];
 
     /**
      * Get a home directory of django project and find all 'urls.py'
      * */
-    urlConfigsFinder(filePath: string): Array<string> {
+    urlConfigsFinder(projectPath: string): Array<string> {
         const urlPaths: Array<string> = [];
 
         const finderCallback: WalkStatArrayEventCallback = (base, details, next) => {
@@ -143,12 +143,30 @@ export class FilesFinder {
             }
             next();
         }
-        walkSync(filePath, {
+        walkSync(projectPath, {
             filters: this.ignoredFolders,
             listeners: {
                 files: finderCallback
             }
         })
         return urlPaths;
+    }
+
+    projectFinder(path: string): string | null {
+        let projectPath = null;
+
+        walkSync(path, {
+            filters: this.ignoredFolders,
+            listeners: {
+                files: (base, details, next) => {
+                    if (details.findIndex((detail) => detail.name === 'manage.py') > -1) {
+                        projectPath = base;
+                    } else {
+                        next();
+                    }
+                }
+            }
+        })
+        return projectPath;
     }
 }
