@@ -1,6 +1,6 @@
 import { braceReader, braces } from "./utilities";
 import { ProcessedURL, UrlArgument, pathConverterTypes } from './main.d';
-import { WalkStatEventCallback, walkSync } from "walk";
+import { WalkStatArrayEventCallback, walkSync } from "walk";
 import { join } from 'path';
 
 export class ConfigReader {
@@ -127,7 +127,8 @@ export class ConfigReader {
 export class FilesFinder {
     private ignoredFolders = [
         '.idea','.vscode', '.git', '__pycache__', 'templates',
-        'tests', 'media', 'static', 'migrations', 'node_modules'
+        'tests', 'media', 'static', 'migrations', 'node_modules',
+        'templatetags'
     ];
 
     /**
@@ -136,16 +137,16 @@ export class FilesFinder {
     urlConfigsFinder(filePath: string): Array<string> {
         const urlPaths: Array<string> = [];
 
-        const finderCallback: WalkStatEventCallback = (base, details, next) => {
-            if(details.type === "file" && details.name === "urls.py") {
-                urlPaths.push(join(base, details.name));
+        const finderCallback: WalkStatArrayEventCallback = (base, details, next) => {
+            if (details.findIndex((detail) => detail.name === 'urls.py') > -1) {
+                urlPaths.push(join(base, 'urls.py'));
             }
             next();
         }
         walkSync(filePath, {
             filters: this.ignoredFolders,
             listeners: {
-                file: finderCallback
+                files: finderCallback
             }
         })
         return urlPaths;
