@@ -21,7 +21,7 @@ Jump to:
 > 1. Models in the project are now automatically detected by the extension.  
 > 1. You can now [switch](#settings 'settings') between keyword and positional arguments in settings for your urls.
 > 1. Built-in auth/`django.contrib.auth` URL configurations can be included or not depending on [settings](#custom-url-configurations 'built-in auth') using `builtInAuth: true`.  
-<br>
+<br>  
 - - - 
 
 ## Usage.  
