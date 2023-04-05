@@ -13,11 +13,7 @@ export class ConfigReader {
         urlArgs: /<.*?>/g
     }
     private pathConverters = new Map<string, pathConverterTypes>([
-        ['slug', 'slug'],
-        ['int', 'integer'],
-        ['str', 'string'],
-        ['uuid', 'UUID'],
-        ['path', 'path']
+        ['slug', 'slug'], ['int', 'integer'], ['str', 'string'], ['uuid', 'UUID'], ['path', 'path']
     ]);
 
     constructor(private errorCallback?: (message: string) => void) {}
