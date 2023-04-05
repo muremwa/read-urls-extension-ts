@@ -1,7 +1,7 @@
-import { braceReader, braces } from "./utilities";
-import { ProcessedURL, UrlArgument, pathConverterTypes } from './main.d';
-import { WalkStatArrayEventCallback, walkSync } from "walk";
 import { join } from 'path';
+import { readdirSync } from "fs";
+import { ProcessedURL, UrlArgument, pathConverterTypes, TraverseOptions } from './main.d';
+import { braceReader, braces } from "./utilities";
 
 export class ConfigReader {
     /**
@@ -130,31 +130,60 @@ export class ConfigReader {
 export class FilesFinder {
     /**
      * Find the files where django url configurations are declared
-     * TODO: Find an alternative to walk, since it traverses the directories bottom-to-top
      * */
 
     private ignoredFolders = [
         '.idea','.vscode', '.git', '__pycache__', 'templates',
         'tests', 'media', 'static', 'migrations', 'node_modules',
-        'templatetags', 'Scripts', 'Lib', 'Include'
+        'templatetags', 'Scripts', 'Lib', 'Include', '.github', '.gitlab'
     ];
 
+    private traverseDirs(path: string, options: TraverseOptions) {
+        let proceed = false;
+        const proceedNextFunc = () => proceed = true;
+
+        const wrappedTraversal = (wrappedPath: string, depth: number) => {
+            // this uses a closure to ensure that `proceed` is the same across the stack
+            proceed = false;
+            const dirents = readdirSync(wrappedPath, { withFileTypes: true });
+            const directories = [];
+            const files = [];
+
+            for(const dirent of dirents) {
+                if (dirent.isFile()) {
+                    files.push(dirent.name);
+                } else if (dirent.isDirectory() && !this.ignoredFolders.includes(dirent.name)) {
+                    directories.push(dirent.name);
+                }
+            }
+
+            options.handleFiles(wrappedPath, files, proceedNextFunc);
+
+            if (depth > 0) {
+                for(const directory of directories) {
+                    if (proceed) {
+                        wrappedTraversal(join(wrappedPath, directory), depth - 1);
+                    }
+                }
+            }
+        }
+        wrappedTraversal(path, options.depth);
+    }
+
+
     /**
-     * Get a home directory of django project and find all 'urls.py'
+     * From a home directory of django project, find all 'urls.py'
      * */
     urlConfigsFinder(projectPath: string): Array<string> {
         const urlPaths: Array<string> = [];
 
-        const finderCallback: WalkStatArrayEventCallback = (base, details, next) => {
-            if (details.findIndex((detail) => detail.name === 'urls.py') > -1) {
-                urlPaths.push(join(base, 'urls.py'));
-            }
-            next();
-        }
-        walkSync(projectPath, {
-            filters: this.ignoredFolders,
-            listeners: {
-                files: finderCallback
+        this.traverseDirs(projectPath, {
+            depth: 2,
+            handleFiles: (base, fileNames, next) => {
+                if (fileNames.findIndex((fileName) => fileName === 'urls.py') > -1) {
+                    urlPaths.push(join(base, 'urls.py'));
+                }
+                next();
             }
         })
         return urlPaths;
@@ -166,18 +195,16 @@ export class FilesFinder {
     projectFinder(path: string): string | null {
         let projectPath = null;
 
-        walkSync(path, {
-            filters: this.ignoredFolders,
-            listeners: {
-                files: (base, details, next) => {
-                    if (details.findIndex((detail) => detail.name === 'manage.py') > -1) {
-                        projectPath = base;
-                    } else {
-                        next();
-                    }
+        this.traverseDirs(path, {
+            depth: 5,
+            handleFiles: (base, fileNames, next) => {
+                if (fileNames.findIndex((fileName) => fileName === 'manage.py') > -1) {
+                    projectPath = base;
+                } else {
+                    next();
                 }
             }
-        })
+        });
         return projectPath;
     }
 }
