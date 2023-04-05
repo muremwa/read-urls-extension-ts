@@ -11,6 +11,8 @@ export interface ProcessedURL {
     args: Array<UrlArgument>
 }
 
+export type AppUrlConfigs = Map<string, Array<ProcessedURL>>;
+
 /**
 * base: the current path,
 * fileNames: an array of all file names in the path,
@@ -22,4 +24,13 @@ export interface TraverseOptions {
     // How far/deep to traverse
     depth: number,
     handleFiles: HandleFilesCallback
+}
+
+type readerConfigErrorCallbacks = (message: string) => void;
+
+export interface ReadOptions {
+    paths: Array<string>,
+    notProjectCallback: readerConfigErrorCallbacks,
+    configReadError: readerConfigErrorCallbacks
+    fileReadError: readerConfigErrorCallbacks,
 }

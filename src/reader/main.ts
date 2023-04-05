@@ -1,9 +1,9 @@
 import { join } from 'path';
-import { readdirSync } from "fs";
-import { ProcessedURL, UrlArgument, pathConverterTypes, TraverseOptions } from './main.d';
+import { readdirSync, readFileSync } from "fs";
+import { ProcessedURL, UrlArgument, pathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions } from './main.d';
 import { braceReader, braces } from "./utilities";
 
-export class ConfigReader {
+class ConfigReader {
     /**
      * Read the configurations of a project
      * */
@@ -94,7 +94,7 @@ export class ConfigReader {
     /**
      * get the urls patterns and process to return URLS
      * */
-    urlsProcessor (configs: { [ appName: string ]: Array<string> }): Map<string, Array<ProcessedURL>> {
+    urlsProcessor (configs: { [ appName: string ]: Array<string> }): AppUrlConfigs {
         const processedConfigurations = new Map<string, Array<ProcessedURL>>();
 
         Object.entries(configs).forEach(([key, urls]) => {
@@ -123,7 +123,7 @@ export class ConfigReader {
 }
 
 
-export class FilesFinder {
+class FilesFinder {
     /**
      * Find the files where django url configurations are declared
      * */
@@ -133,6 +133,8 @@ export class FilesFinder {
         'tests', 'media', 'static', 'migrations', 'node_modules',
         'templatetags', 'Scripts', 'Lib', 'Include', '.github', '.gitlab'
     ];
+
+    constructor(private errorCallback?: (message: string) => void) {}
 
     private traverseDirs(path: string, options: TraverseOptions) {
         let proceed = false;
@@ -163,7 +165,14 @@ export class FilesFinder {
                 }
             }
         }
-        wrappedTraversal(path, options.depth);
+
+        try {
+            wrappedTraversal(path, options.depth);
+        } catch (error) {
+            if (this.errorCallback) {
+                this.errorCallback(path)
+            }
+        }
     }
 
 
@@ -203,4 +212,43 @@ export class FilesFinder {
         });
         return projectPath;
     }
+}
+
+
+/**
+ * Get a list of paths of suspect django projects and return the processed urls
+ * */
+export default function mainReader(options: ReadOptions): Array<{ projectPath: string, mappings: AppUrlConfigs }> {
+    const configurations: Array<{ projectPath: string, mappings: AppUrlConfigs }> = [];
+    const finder = new FilesFinder(options.fileReadError);
+    const reader = new ConfigReader(options.configReadError);
+
+    for(const path of options.paths) {
+        const projectPath = finder.projectFinder(path);
+
+        if (projectPath) {
+            const urlMappingFiles = finder.urlConfigsFinder(projectPath);
+            const mappings: { [appName: string]: Array<string> } = {};
+
+            for(const urlMappingFile of urlMappingFiles) {
+                try {
+                    Object.assign(
+                        mappings,
+                        reader.configsFinder(
+                            readFileSync(urlMappingFile, { flag: 'r', encoding: 'utf-8' }),
+                            urlMappingFile
+                        )
+                    );
+                } catch (err) {
+                    if (err) {
+                        options.fileReadError(urlMappingFile);
+                    }
+                }
+            }
+            configurations.push({ projectPath, mappings: reader.urlsProcessor(mappings) });
+        } else {
+            options.notProjectCallback(path);
+        }
+    }
+    return configurations;
 }
