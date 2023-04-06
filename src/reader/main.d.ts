@@ -8,7 +8,8 @@ export interface UrlArgument {
 export interface ProcessedURL {
     name: string,
     hasArgs: boolean,
-    args: Array<UrlArgument>
+    args: Array<UrlArgument>,
+    viewName: string
 }
 
 export type AppUrlConfigs = Map<string, Array<ProcessedURL>>;

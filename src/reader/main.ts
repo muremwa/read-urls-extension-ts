@@ -99,6 +99,7 @@ class ConfigReader {
 
         Object.entries(configs).forEach(([key, urls]) => {
             const processedUrls: Array<ProcessedURL> = [];
+            const appHasNoAppName = key.includes('READER_FILE_PATH_');
 
             urls.forEach((urlText) => {
                 const matchedName = ConfigReader.getGroupMatch(
@@ -111,8 +112,9 @@ class ConfigReader {
                     processedUrls.push({
                         name: matchedName,
                         args: this.typePathConverter(matchedArgs),
-                        hasArgs: !!matchedArgs
-                    })
+                        hasArgs: !!matchedArgs,
+                        viewName: appHasNoAppName? matchedName: `${key}:${matchedName}`
+                    });
                 }
             });
             processedConfigurations.set(key, processedUrls);
