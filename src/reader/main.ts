@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "fs";
 import { ProcessedURL, UrlArgument, pathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions } from './main.d';
 import { braceReader, braces } from "./utilities";
 
-class ConfigReader {
+export class ConfigReader {
     /**
      * Read the configurations of a project
      * */
@@ -18,7 +18,7 @@ class ConfigReader {
 
     constructor(private errorCallback?: (message: string) => void) {}
 
-    private static cleanTextBeforeProcessing (text: string): string {
+    protected static cleanTextBeforeProcessing (text: string): string {
         // Remove new lines, and python comments
         return text.replace(
             /""".*?"""/sg, ''
@@ -29,7 +29,7 @@ class ConfigReader {
         );
     }
 
-    private static getGroupMatch(matches: RegExpMatchArray | null, groupName: string, fallback = ''): string {
+    protected static getGroupMatch(matches: RegExpMatchArray | null, groupName: string, fallback = ''): string {
         // Presented with a match, return a string or the default
         if (matches && matches.groups && matches.groups[groupName]) {
             return matches.groups[groupName];
@@ -37,7 +37,7 @@ class ConfigReader {
         return fallback;
     }
 
-    private typePathConverter(matches: RegExpMatchArray | null): Array<UrlArgument> {
+    protected typePathConverter(matches: RegExpMatchArray | null): Array<UrlArgument> {
         // get an array of arg matched, convert it to correct format
         // ['<str:action>',] => [ { name: 'action', type: 'string' } ]
         if (matches) {
@@ -125,7 +125,7 @@ class ConfigReader {
 }
 
 
-class FilesFinder {
+export class FilesFinder {
     /**
      * Find the files where django url configurations are declared
      * */
@@ -138,7 +138,7 @@ class FilesFinder {
 
     constructor(private errorCallback?: (message: string) => void) {}
 
-    private traverseDirs(path: string, options: TraverseOptions) {
+    protected traverseDirs(path: string, options: TraverseOptions) {
         let proceed = false;
         const proceedNextFunc = () => proceed = true;
 
