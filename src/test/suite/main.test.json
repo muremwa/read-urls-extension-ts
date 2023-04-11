@@ -1,0 +1,3 @@
+{
+  "mapFile": "from django.urls import path\n\nfrom . import views\n\napp_name = 'core'\n\n\nurlpatterns = [\n    # accounts/create/ or accounts/edit/ or accounts/get/?username=user\n    path('accounts/<str:action>/', views.account_action, name='account-action'),\n\n    # login/\n    path('login/', views.login, name='login'),\n\n    # profile/create/\n    path('profile/create/', views.profile_create, name='profile-create')]    # profile/delete/1/\n urlspatterns+= [\n    path('profile/delete/<int:profile_pk>/', views.profile_delete, name='profile-delete'),\n]\n"
+}
