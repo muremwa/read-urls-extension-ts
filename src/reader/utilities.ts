@@ -1,6 +1,6 @@
 const bracePairs = ['(', ')', '[', ']', '{', '}', '<', '>'];
 
-export enum braces {
+export enum Braces {
     ROUND_BRACKET_OPEN,
     ROUND_BRACKET_CLOSE,
     SQUARE_BRACKET_OPEN,
@@ -22,7 +22,7 @@ export enum braces {
  *
  * if removeBrace is true, then returns = [ "the king", "20" ]
  * */
-export function braceReader(text: string, openingBrace: braces, removeBrace = false): Array<string> {
+export function braceReader(text: string, openingBrace: Braces, removeBrace = false): Array<string> {
     if (openingBrace % 2 !== 0) {
         throw TypeError('Invalid opening brace')
     }

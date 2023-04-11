@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { readdirSync, readFileSync } from "fs";
 import { ProcessedURL, UrlArgument, pathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions } from './main.d';
-import { braceReader, braces } from "./utilities";
+import { braceReader, Braces } from "./utilities";
 
 export class ConfigReader {
     /**
@@ -78,9 +78,9 @@ export class ConfigReader {
 
         // get URLS from urlpatterns
         try {
-            const urlPatterns = braceReader(formattedText, braces.SQUARE_BRACKET_OPEN);
+            const urlPatterns = braceReader(formattedText, Braces.SQUARE_BRACKET_OPEN);
             urls = urlPatterns.map((pattern) => {
-                return braceReader(pattern, braces.ROUND_BRACKET_OPEN);
+                return braceReader(pattern, Braces.ROUND_BRACKET_OPEN);
             }).flat();
         } catch (error) {
             if (error && error instanceof Error && this.errorCallback) {
