@@ -18,15 +18,15 @@ export class ConfigReader {
 
     constructor(private errorCallback?: (message: string) => void) {}
 
-    protected static cleanTextBeforeProcessing (text: string): string {
+    protected static cleanTextBeforeProcessing (text: string, allowNewLines = false): string {
         // Remove new lines, and python comments
-        return text.replace(
+        const repl = text.replace(
             /""".*?"""/sg, ''
         ).replace(
             /#.*?\n/sg, ''
-        ).replace(
-            '\n', ' '
         );
+
+        return allowNewLines? repl: repl.replace('\n', ' ');
     }
 
     protected static getGroupMatch(matches: RegExpMatchArray | null, groupName: string, fallback = ''): string {

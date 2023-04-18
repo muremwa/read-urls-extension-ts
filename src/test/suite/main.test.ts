@@ -27,6 +27,10 @@ suite('Main Test Suite', () => {
             "Muremwa Daniel",
             reader.cleanTextBeforeProcessingPB()('# My name is \nMuremwa\nDaniel')
         );
+        assert.strictEqual(
+            "Muremwa\nDaniel",
+            reader.cleanTextBeforeProcessingPB()('# My name is \nMuremwa\nDaniel', true)
+        );
     });
 
     test('Test Group Match', () => {
