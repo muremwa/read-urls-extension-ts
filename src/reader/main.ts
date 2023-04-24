@@ -1,6 +1,6 @@
 import { join } from 'path';
 import { readdirSync, readFileSync } from "fs";
-import { ProcessedURL, UrlArgument, pathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions } from './main.d';
+import { ProcessedURL, UrlArgument, PathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions, ImportLevels } from './main.d';
 import { braceReader, Braces } from "./utilities";
 
 export class ConfigReader {
@@ -12,7 +12,7 @@ export class ConfigReader {
         reverseName: /\bname=['"](?<name>.*?)['"]/,
         urlArgs: /<.*?>/g
     }
-    private pathConverters = new Map<string, pathConverterTypes>([
+    private pathConverters = new Map<string, PathConverterTypes>([
         ['slug', 'slug'], ['int', 'integer'], ['str', 'string'], ['uuid', 'UUID'], ['path', 'path']
     ]);
 
@@ -121,6 +121,72 @@ export class ConfigReader {
         });
 
         return processedConfigurations;
+    }
+
+    /*
+    * Extract models registered in the admin module
+    * */
+    modelsFinder(text: string): Array<string> {
+        const models: Array<string> = [];
+        const cleanText = ConfigReader.cleanTextBeforeProcessing(text, true);
+        const importLevels = new Map<string, ImportLevels>([['admin', 0], ['site', 1], ['register', 2]]);
+
+        // get import
+        const importMatch = ConfigReader.getGroupMatch(
+            cleanText.match(/^from\sdjango\.contrib.*?(?<imp>admin.*?)$/m),
+            'imp',
+            ''
+        );
+
+        if (importMatch) {
+            const actualImport = importMatch.replace(/.*?import\s/, '');
+            const [ importName, alias ] = actualImport.split(' as ');
+
+            if (importName) {
+                const scopeName = alias? alias: importName;
+
+                // get assignments
+                const assignExp = new RegExp(`^(?<var>\\w+)[a-zA-Z\\d\\s]*=\\s*${scopeName}.*?(?<assignment>\\w*)$`, 'm');
+                const assignMatch = assignExp.exec(cleanText);
+                const assignVar = ConfigReader.getGroupMatch(assignMatch, 'var');
+                const assignItem = ConfigReader.getGroupMatch(assignMatch, 'assignment');
+                const importLevel = assignItem? assignItem: importName;
+
+                const registerDetails: { func: string, level: ImportLevels, assignStatus: boolean } = {
+                    func: assignVar? assignVar: scopeName,
+                    level: importLevels.has(importLevel)? importLevels.get(importLevel)!: -1,
+                    assignStatus: !!assignVar
+                };
+
+                const deco = new RegExp(`^@${registerDetails.func}(?:\\.register)*\\((?<models>.*?)(?:, site=.*?)?\\)`, 'mg');
+                const meth = new RegExp(`^${registerDetails.func}(?:\\.site)*(?:\\.register)*\\((?<models>\\w+)`, 'mg');
+
+                let decoMatch = deco.exec(cleanText);
+                let methMatch = meth.exec(cleanText);
+
+                while(decoMatch !== null || methMatch !== null) {
+                    // for @admin.register()
+                    if (decoMatch) {
+                        const posModels = ConfigReader.getGroupMatch(
+                            decoMatch,
+                            'models'
+                        ).match(/\w+/g);
+
+                        if (posModels) {
+                            models.push(...posModels);
+                        }
+                        decoMatch = deco.exec(cleanText);
+                    }
+
+                    // admin.site.register()
+                    if (methMatch) {
+                        models.push(ConfigReader.getGroupMatch(methMatch, 'models'));
+                        methMatch = meth.exec(cleanText);
+                    }
+                }
+            }
+        }
+        return models;
     }
 }
 

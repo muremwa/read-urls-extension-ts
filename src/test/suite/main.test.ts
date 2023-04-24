@@ -148,4 +148,10 @@ suite('Main Test Suite', () => {
 
         assert.throws(() => braceReader('(sample)', Braces.CURLY_BRACKET_CLOSE), TypeError);
     });
+
+    test('Test Models Finder', () => {
+        data.models.forEach((txt, index) => {
+            assert.deepStrictEqual(reader.modelsFinder(txt), data.modelsAns[index])
+        });
+    });
 });
