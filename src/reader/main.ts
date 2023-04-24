@@ -194,6 +194,7 @@ export class FilesFinder {
         'tests', 'media', 'static', 'migrations', 'node_modules',
         'templatetags', 'Scripts', 'Lib', 'Include', '.github', '.gitlab'
     ];
+    projectPath: string | null = null;
 
     constructor(private errorCallback?: (message: string) => void) {}
 
@@ -202,7 +203,7 @@ export class FilesFinder {
         const proceedNextFunc = () => proceed = true;
 
         const wrappedTraversal = (wrappedPath: string, depth: number) => {
-            // this uses a closure to ensure that `proceed` is the same across the stack
+            // this is here to ensure that `proceed` is the same across the stack
             proceed = false;
             const dirents = readdirSync(wrappedPath, { withFileTypes: true });
             const directories = [];
@@ -240,18 +241,20 @@ export class FilesFinder {
     /**
      * From a home directory of django project, find all 'urls.py'
      * */
-    urlConfigsFinder(projectPath: string): Array<string> {
+    urlConfigsFinder(): Array<string> {
         const urlPaths: Array<string> = [];
 
-        this.traverseDirs(projectPath, {
-            depth: 2,
-            handleFiles: (base, fileNames, next) => {
-                if (fileNames.findIndex((fileName) => fileName === 'urls.py') > -1) {
-                    urlPaths.push(join(base, 'urls.py'));
+        if (this.projectPath) {
+            this.traverseDirs(this.projectPath, {
+                depth: 2,
+                handleFiles: (base, fileNames, next) => {
+                    if (fileNames.findIndex((fileName) => fileName === 'urls.py') > -1) {
+                        urlPaths.push(join(base, 'urls.py'));
+                    }
+                    next();
                 }
-                next();
-            }
-        })
+            });
+        }
         return urlPaths;
     }
 
@@ -259,19 +262,17 @@ export class FilesFinder {
      * Find the django project home directory.
      * */
     projectFinder(path: string): string | null {
-        let projectPath = null;
-
         this.traverseDirs(path, {
             depth: 5,
             handleFiles: (base, fileNames, next) => {
                 if (fileNames.findIndex((fileName) => fileName === 'manage.py') > -1) {
-                    projectPath = base;
+                    this.projectPath = base;
                 } else {
                     next();
                 }
             }
         });
-        return projectPath;
+        return this.projectPath;
     }
 }
 
@@ -288,7 +289,7 @@ export default function mainReader(options: ReadOptions): Array<{ projectPath: s
         const projectPath = finder.projectFinder(path);
 
         if (projectPath) {
-            const urlMappingFiles = finder.urlConfigsFinder(projectPath);
+            const urlMappingFiles = finder.urlConfigsFinder();
             const mappings: { [appName: string]: Array<string> } = {};
 
             for(const urlMappingFile of urlMappingFiles) {
