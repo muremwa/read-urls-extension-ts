@@ -1,7 +1,5 @@
 export type PathConverterTypes = "string" | "slug" | "integer" | "UUID" | "path" | null;
 
-export type ImportLevels = -1 | 0 | 1 | 2;
-
 export interface UrlArgument {
     name: string,
     type: PathConverterTypes,

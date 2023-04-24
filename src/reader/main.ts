@@ -1,7 +1,8 @@
 import { join } from 'path';
 import { readdirSync, readFileSync } from "fs";
-import { ProcessedURL, UrlArgument, PathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions, ImportLevels } from './main.d';
+import { ProcessedURL, UrlArgument, PathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions } from './main.d';
 import { braceReader, Braces } from "./utilities";
+
 
 export class ConfigReader {
     /**
@@ -10,7 +11,8 @@ export class ConfigReader {
     private patterns = {
         appName: /app_name.*?['"](?<appName>.*?)['"]/,
         reverseName: /\bname=['"](?<name>.*?)['"]/,
-        urlArgs: /<.*?>/g
+        urlArgs: /<.*?>/g,
+        adminImport: /^from\sdjango\.contrib.*?(?<imp>admin.*?)$/m
     }
     private pathConverters = new Map<string, PathConverterTypes>([
         ['slug', 'slug'], ['int', 'integer'], ['str', 'string'], ['uuid', 'UUID'], ['path', 'path']
@@ -129,11 +131,10 @@ export class ConfigReader {
     modelsFinder(text: string): Array<string> {
         const models: Array<string> = [];
         const cleanText = ConfigReader.cleanTextBeforeProcessing(text, true);
-        const importLevels = new Map<string, ImportLevels>([['admin', 0], ['site', 1], ['register', 2]]);
 
         // get import
         const importMatch = ConfigReader.getGroupMatch(
-            cleanText.match(/^from\sdjango\.contrib.*?(?<imp>admin.*?)$/m),
+            cleanText.match(this.patterns.adminImport),
             'imp',
             ''
         );
@@ -146,20 +147,12 @@ export class ConfigReader {
                 const scopeName = alias? alias: importName;
 
                 // get assignments
-                const assignExp = new RegExp(`^(?<var>\\w+)[a-zA-Z\\d\\s]*=\\s*${scopeName}.*?(?<assignment>\\w*)$`, 'm');
-                const assignMatch = assignExp.exec(cleanText);
-                const assignVar = ConfigReader.getGroupMatch(assignMatch, 'var');
-                const assignItem = ConfigReader.getGroupMatch(assignMatch, 'assignment');
-                const importLevel = assignItem? assignItem: importName;
+                const assignExp = new RegExp(`^(?<var>\\w+)[a-zA-Z\\d\\s]*=\\s*${scopeName}.*?\\w*$`, 'm');
+                const assignVar = ConfigReader.getGroupMatch(assignExp.exec(cleanText), 'var');
+                const regFunc = assignVar? assignVar: scopeName;
 
-                const registerDetails: { func: string, level: ImportLevels, assignStatus: boolean } = {
-                    func: assignVar? assignVar: scopeName,
-                    level: importLevels.has(importLevel)? importLevels.get(importLevel)!: -1,
-                    assignStatus: !!assignVar
-                };
-
-                const deco = new RegExp(`^@${registerDetails.func}(?:\\.register)*\\((?<models>.*?)(?:, site=.*?)?\\)`, 'mg');
-                const meth = new RegExp(`^${registerDetails.func}(?:\\.site)*(?:\\.register)*\\((?<models>\\w+)`, 'mg');
+                const deco = new RegExp(`^@${regFunc}(?:\\.register)*\\((?<models>.*?)(?:, site=.*?)?\\)`, 'mg');
+                const meth = new RegExp(`^${regFunc}(?:\\.site)*(?:\\.register)*\\((?<models>\\w+)`, 'mg');
 
                 let decoMatch = deco.exec(cleanText);
                 let methMatch = meth.exec(cleanText);
