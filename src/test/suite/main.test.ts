@@ -1,4 +1,4 @@
-import { ConfigReader } from "../../reader/main";
+import { ConfigReader, UtilityClass } from "../../reader/main";
 import { braceReader, Braces } from "../../reader/utilities";
 import * as assert from 'assert';
 import * as data from './main.test.json'
@@ -7,14 +7,6 @@ import { AppUrlConfigs, UrlArgument } from "../../reader/main.d";
 class ConfigReaderPB extends ConfigReader {
     typePathConverterPB() {
         return this.typePathConverter.bind(this);
-    }
-
-    getGroupMatchPB() {
-        return ConfigReaderPB.getGroupMatch;
-    }
-
-    cleanTextBeforeProcessingPB() {
-        return ConfigReaderPB.cleanTextBeforeProcessing;
     }
 }
 
@@ -25,23 +17,22 @@ suite('Main Test Suite', () => {
         const reader = new ConfigReaderPB();
         assert.strictEqual(
             "Muremwa Daniel",
-            reader.cleanTextBeforeProcessingPB()('# My name is \nMuremwa\nDaniel')
+            UtilityClass.cleanTextBeforeProcessing('# My name is \nMuremwa\nDaniel')
         );
         assert.strictEqual(
             "Muremwa\nDaniel",
-            reader.cleanTextBeforeProcessingPB()('# My name is \nMuremwa\nDaniel', true)
+            UtilityClass.cleanTextBeforeProcessing('# My name is \nMuremwa\nDaniel', true)
         );
     });
 
     test('Test Group Match', () => {
-        const gp = reader.getGroupMatchPB();
         assert.strictEqual(
             'muremwa',
-            gp('muremwa'.match(/(?<name>\w+)/), 'name')
+            UtilityClass.getGroupMatch('muremwa'.match(/(?<name>\w+)/), 'name')
         );
         assert.strictEqual(
             'fd',
-            gp('muremwa'.match(/(?<name>\w+)/), 'names', 'fd')
+            UtilityClass.getGroupMatch('muremwa'.match(/(?<name>\w+)/), 'names', 'fd')
         );
     });
 

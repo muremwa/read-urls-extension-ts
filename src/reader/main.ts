@@ -4,6 +4,29 @@ import { ProcessedURL, UrlArgument, PathConverterTypes, TraverseOptions, AppUrlC
 import { braceReader, Braces } from "./utilities";
 
 
+export class UtilityClass {
+
+    static cleanTextBeforeProcessing(text: string, allowNewLines = false): string {
+        // Remove new lines, and python comments
+        const repl = text.replace(
+            /""".*?"""/sg, ''
+        ).replace(
+            /#.*?\n/sg, ''
+        );
+
+        return allowNewLines ? repl : repl.replace('\n', ' ');
+    }
+
+    static getGroupMatch(matches: RegExpMatchArray | null, groupName: string, fallback = ''): string {
+        // Presented with a match, return a string or the default
+        if (matches && matches.groups && matches.groups[groupName]) {
+            return matches.groups[groupName];
+        }
+        return fallback;
+    }
+}
+
+
 export class ConfigReader {
     /**
      * Read the configurations of a project
@@ -15,28 +38,10 @@ export class ConfigReader {
         adminImport: /^from\sdjango\.contrib.*?(?<imp>admin.*?)$/m
     }
     private pathConverters = new Map<string, PathConverterTypes>([
-        ['slug', 'slug'], ['int', 'integer'], ['str', 'string'], ['uuid', 'UUID'], ['path', 'path']
+        [ 'slug', 'slug' ], [ 'int', 'integer' ], [ 'str', 'string' ], [ 'uuid', 'UUID' ], [ 'path', 'path' ]
     ]);
 
-    constructor(private errorCallback?: (message: string) => void) {}
-
-    protected static cleanTextBeforeProcessing (text: string, allowNewLines = false): string {
-        // Remove new lines, and python comments
-        const repl = text.replace(
-            /""".*?"""/sg, ''
-        ).replace(
-            /#.*?\n/sg, ''
-        );
-
-        return allowNewLines? repl: repl.replace('\n', ' ');
-    }
-
-    protected static getGroupMatch(matches: RegExpMatchArray | null, groupName: string, fallback = ''): string {
-        // Presented with a match, return a string or the default
-        if (matches && matches.groups && matches.groups[groupName]) {
-            return matches.groups[groupName];
-        }
-        return fallback;
+    constructor(private errorCallback?: (message: string) => void) {
     }
 
     protected typePathConverter(matches: RegExpMatchArray | null): Array<UrlArgument> {
@@ -53,7 +58,7 @@ export class ConfigReader {
 
                 if (splitItems.length === 2) {
                     const updArgType = this.pathConverters.get(splitItems[0]);
-                    args.push({ name: splitItems[1], type: updArgType? updArgType: null });
+                    args.push({ name: splitItems[1], type: updArgType ? updArgType : null });
                 } else if (splitItems.length === 1) {
                     args.push({ name: cleanedMatch, type: null })
                 }
@@ -65,12 +70,12 @@ export class ConfigReader {
     }
 
     /**
-     * Gets text from a 'urls.py' file finds the app_name, if any, and the urlspatterns
+     * Gets text from a 'urls.py' file finds the app_name, if any, and the `urlpatterns`
      * */
-    configsFinder (text: string, filePath: string): { [ appName: string ]: Array<string> } {
-        const formattedText = ConfigReader.cleanTextBeforeProcessing(text);
+    configsFinder(text: string, filePath: string): { [appName: string]: Array<string> } {
+        const formattedText = UtilityClass.cleanTextBeforeProcessing(text);
         // get appName
-        const appName: string = ConfigReader.getGroupMatch(
+        const appName: string = UtilityClass.getGroupMatch(
             formattedText.match(this.patterns.appName),
             'appName',
             `READER_FILE_PATH_${filePath}`
@@ -96,15 +101,15 @@ export class ConfigReader {
     /**
      * get the urls patterns and process to return URLS
      * */
-    urlsProcessor (configs: { [ appName: string ]: Array<string> }): AppUrlConfigs {
+    urlsProcessor(configs: { [appName: string]: Array<string> }): AppUrlConfigs {
         const processedConfigurations = new Map<string, Array<ProcessedURL>>();
 
-        Object.entries(configs).forEach(([key, urls]) => {
+        Object.entries(configs).forEach(([ key, urls ]) => {
             const processedUrls: Array<ProcessedURL> = [];
             const appHasNoAppName = key.includes('READER_FILE_PATH_');
 
             urls.forEach((urlText) => {
-                const matchedName = ConfigReader.getGroupMatch(
+                const matchedName = UtilityClass.getGroupMatch(
                     urlText.match(this.patterns.reverseName),
                     'name'
                 );
@@ -115,7 +120,7 @@ export class ConfigReader {
                         name: matchedName,
                         args: this.typePathConverter(matchedArgs),
                         hasArgs: !!matchedArgs,
-                        viewName: appHasNoAppName? matchedName: `${key}:${matchedName}`
+                        viewName: appHasNoAppName ? matchedName : `${key}:${matchedName}`
                     });
                 }
             });
@@ -130,10 +135,10 @@ export class ConfigReader {
     * */
     modelsFinder(text: string): Array<string> {
         const models: Array<string> = [];
-        const cleanText = ConfigReader.cleanTextBeforeProcessing(text, true);
+        const cleanText = UtilityClass.cleanTextBeforeProcessing(text, true);
 
         // get import
-        const importMatch = ConfigReader.getGroupMatch(
+        const importMatch = UtilityClass.getGroupMatch(
             cleanText.match(this.patterns.adminImport),
             'imp',
             ''
@@ -144,12 +149,12 @@ export class ConfigReader {
             const [ importName, alias ] = actualImport.split(' as ');
 
             if (importName) {
-                const scopeName = alias? alias: importName;
+                const scopeName = alias ? alias : importName;
 
                 // get assignments
                 const assignExp = new RegExp(`^(?<var>\\w+)[a-zA-Z\\d\\s]*=\\s*${scopeName}.*?\\w*$`, 'm');
-                const assignVar = ConfigReader.getGroupMatch(assignExp.exec(cleanText), 'var');
-                const regFunc = assignVar? assignVar: scopeName;
+                const assignVar = UtilityClass.getGroupMatch(assignExp.exec(cleanText), 'var');
+                const regFunc = assignVar ? assignVar : scopeName;
 
                 const deco = new RegExp(`^@${regFunc}(?:\\.register)*\\((?<models>.*?)(?:, site=.*?)?\\)`, 'mg');
                 const meth = new RegExp(`^${regFunc}(?:\\.site)*(?:\\.register)*\\((?<models>\\w+)`, 'mg');
@@ -157,10 +162,10 @@ export class ConfigReader {
                 let decoMatch = deco.exec(cleanText);
                 let methMatch = meth.exec(cleanText);
 
-                while(decoMatch !== null || methMatch !== null) {
+                while (decoMatch !== null || methMatch !== null) {
                     // for @admin.register()
                     if (decoMatch) {
-                        const posModels = ConfigReader.getGroupMatch(
+                        const posModels = UtilityClass.getGroupMatch(
                             decoMatch,
                             'models'
                         ).match(/\w+/g);
@@ -173,7 +178,7 @@ export class ConfigReader {
 
                     // admin.site.register()
                     if (methMatch) {
-                        models.push(ConfigReader.getGroupMatch(methMatch, 'models'));
+                        models.push(UtilityClass.getGroupMatch(methMatch, 'models'));
                         methMatch = meth.exec(cleanText);
                     }
                 }
@@ -190,13 +195,14 @@ export class FilesFinder {
      * */
 
     private ignoredFolders = [
-        '.idea','.vscode', '.git', '__pycache__', 'templates',
+        '.idea', '.vscode', '.git', '__pycache__', 'templates',
         'tests', 'media', 'static', 'migrations', 'node_modules',
         'templatetags', 'Scripts', 'Lib', 'Include', '.github', '.gitlab'
     ];
     projectPath: string | null = null;
 
-    constructor(private errorCallback?: (message: string) => void) {}
+    constructor(private errorCallback?: (message: string) => void) {
+    }
 
     protected traverseDirs(path: string, options: TraverseOptions) {
         let proceed = false;
@@ -209,7 +215,7 @@ export class FilesFinder {
             const directories = [];
             const files = [];
 
-            for(const dirent of dirents) {
+            for (const dirent of dirents) {
                 if (dirent.isFile()) {
                     files.push(dirent.name);
                 } else if (dirent.isDirectory() && !this.ignoredFolders.includes(dirent.name)) {
@@ -220,7 +226,7 @@ export class FilesFinder {
             options.handleFiles(wrappedPath, files, proceedNextFunc);
 
             if (depth > 0) {
-                for(const directory of directories) {
+                for (const directory of directories) {
                     if (proceed) {
                         wrappedTraversal(join(wrappedPath, directory), depth - 1);
                     }
@@ -285,14 +291,14 @@ export default function mainReader(options: ReadOptions): Array<{ projectPath: s
     const finder = new FilesFinder(options.fileReadError);
     const reader = new ConfigReader(options.configReadError);
 
-    for(const path of options.paths) {
+    for (const path of options.paths) {
         const projectPath = finder.projectFinder(path);
 
         if (projectPath) {
             const urlMappingFiles = finder.urlConfigsFinder();
             const mappings: { [appName: string]: Array<string> } = {};
 
-            for(const urlMappingFile of urlMappingFiles) {
+            for (const urlMappingFile of urlMappingFiles) {
                 try {
                     Object.assign(
                         mappings,
