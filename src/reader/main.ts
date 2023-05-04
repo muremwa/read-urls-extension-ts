@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { readdirSync, readFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync } from "fs";
 import { ProcessedURL, UrlArgument, PathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions } from './main.d';
 import { braceReader, Braces } from "./utilities";
 
@@ -262,6 +262,66 @@ export class FilesFinder {
             });
         }
         return urlPaths;
+    }
+
+    adminModuleFinder(appPaths: { [appName: string]: string }) {
+        /*
+            Given { 'accounts': 'path/to/app/' }
+            Models in django are registered in the admin module
+            1. projectRoot/app/admin.py
+            2. projectRoot/app/admin/*
+        */
+        const modules = new Map<string, Array<string>>();
+
+        Object.entries(appPaths).forEach(([appName, appPath]) => {
+            const singleAdmin = join(appPath, 'admin.py');
+            const modularAdmin = join(appPath, 'admin', '__init__.py');
+
+            try {
+                if (existsSync(singleAdmin)) {
+                    modules.set(appName, [readFileSync(singleAdmin, { flag: 'r', encoding: 'utf-8' })]);
+                } else if (existsSync(modularAdmin)) {
+                    const txt = UtilityClass.cleanTextBeforeProcessing(
+                        readFileSync(modularAdmin, { flag: 'r', encoding: 'utf-8' }),
+                        true
+                    );
+
+                    const appHomeDir = UtilityClass.getGroupMatch(
+                        appPath.match(/\\(?<homeDir>\w+)$/),
+                        'homeDir'
+                    );
+
+                    if (txt && appHomeDir) {
+                        const impTexts: Array<string> = [];
+                        const importExp = new RegExp(
+                            `from\\s(?:${appHomeDir}|\\.)*\\.(?:admin)*\\simport\\s(?<imps>.*?)$`,
+                            'm'
+                        );
+
+                        const adminImports = UtilityClass.getGroupMatch(
+                            importExp.exec(txt),
+                            'imps'
+                        ).split(', ');
+
+                        adminImports.forEach((imp) => {
+                            const importPath = join(appPath, 'admin', `${imp}.py`);
+
+                            if (existsSync(importPath)) {
+                                impTexts.push(readFileSync(importPath, { flag: 'r', encoding: 'utf-8' }));
+                            }
+                        });
+
+                        modules.set(appName, impTexts);
+                    }
+                }
+            } catch {
+                if (this.errorCallback) {
+                    this.errorCallback(`Admin file error in "${appPath}"`);
+                }
+            }
+        });
+
+        return modules;
     }
 
     /**
