@@ -1,6 +1,6 @@
 import { join } from 'path';
 import { existsSync, readdirSync, readFileSync } from "fs";
-import { ProcessedURL, UrlArgument, PathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions } from './main.d';
+import { ProcessedURL, UrlArgument, PathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions, ProjectReadOutput } from './main.d';
 import { braceReader, Braces } from "./utilities";
 
 
@@ -243,7 +243,6 @@ export class FilesFinder {
         }
     }
 
-
     /**
      * From a home directory of django project, find all 'urls.py'
      * */
@@ -346,8 +345,8 @@ export class FilesFinder {
 /**
  * Get a list of paths of suspect django projects and return the processed urls
  * */
-export default function mainReader(options: ReadOptions): Array<{ projectPath: string, mappings: AppUrlConfigs }> {
-    const configurations: Array<{ projectPath: string, mappings: AppUrlConfigs }> = [];
+export default function mainReader(options: ReadOptions): Array<ProjectReadOutput> {
+    const configurations: Array<ProjectReadOutput> = [];
     const finder = new FilesFinder(options.fileReadError);
     const reader = new ConfigReader(options.configReadError);
 
@@ -357,23 +356,38 @@ export default function mainReader(options: ReadOptions): Array<{ projectPath: s
         if (projectPath) {
             const urlMappingFiles = finder.urlConfigsFinder();
             const mappings: { [appName: string]: Array<string> } = {};
+            const appPaths: { [appName: string]: string } = {};
+            const appModels = new Map<string, Array<string>>();
 
             for (const urlMappingFile of urlMappingFiles) {
                 try {
-                    Object.assign(
-                        mappings,
-                        reader.configsFinder(
-                            readFileSync(urlMappingFile, { flag: 'r', encoding: 'utf-8' }),
-                            urlMappingFile
-                        )
+                    const urlMaps = reader.configsFinder(
+                        readFileSync(urlMappingFile, { flag: 'r', encoding: 'utf-8' }),
+                        urlMappingFile
                     );
+
+                    const configKeys = Object.keys(urlMaps);
+                    if (configKeys.length > 0) {
+                        appPaths[configKeys[0]] = urlMappingFile.replace(/\\urls.py$/g, '');
+                    }
+                    Object.assign(mappings, urlMaps);
                 } catch (err) {
                     if (err) {
                         options.fileReadError(urlMappingFile);
                     }
                 }
             }
-            configurations.push({ projectPath, mappings: reader.urlsProcessor(mappings) });
+
+            // find the models
+            for (const [moduleAppName, modules] of finder.adminModuleFinder(appPaths).entries()) {
+                appModels.set(moduleAppName, modules.map((module) => reader.modelsFinder(module)).flat())
+            }
+
+            configurations.push({
+                projectPath,
+                mappings: reader.urlsProcessor(mappings),
+                models: appModels
+            });
         } else {
             options.notProjectCallback(path);
         }

@@ -35,3 +35,9 @@ export interface ReadOptions {
     configReadError: readerConfigErrorCallbacks
     fileReadError: readerConfigErrorCallbacks,
 }
+
+interface ProjectReadOutput {
+    projectPath: string;
+    mappings: AppUrlConfigs;
+    models: Map<string, Array<string>>;
+}
