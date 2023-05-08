@@ -14,7 +14,6 @@ suite('Main Test Suite', () => {
     const reader = new ConfigReaderPB();
 
     test('Test text processor', () => {
-        const reader = new ConfigReaderPB();
         assert.strictEqual(
             "Muremwa Daniel",
             UtilityClass.cleanTextBeforeProcessing('# My name is \nMuremwa\nDaniel')
