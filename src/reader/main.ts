@@ -1,30 +1,15 @@
 import { join } from 'path';
 import { existsSync, readdirSync, readFileSync } from "fs";
-import { ProcessedURL, UrlArgument, PathConverterTypes, TraverseOptions, AppUrlConfigs, ReadOptions, ProjectReadOutput } from './main.d';
-import { braceReader, Braces } from "./utilities";
-
-
-export class UtilityClass {
-
-    static cleanTextBeforeProcessing(text: string, allowNewLines = false): string {
-        // Remove new lines, and python comments
-        const repl = text.replace(
-            /""".*?"""/sg, ''
-        ).replace(
-            /#.*?\n/sg, ''
-        );
-
-        return allowNewLines ? repl : repl.replace('\n', ' ');
-    }
-
-    static getGroupMatch(matches: RegExpMatchArray | null, groupName: string, fallback = ''): string {
-        // Presented with a match, return a string or the default
-        if (matches && matches.groups && matches.groups[groupName]) {
-            return matches.groups[groupName];
-        }
-        return fallback;
-    }
-}
+import {
+    AppUrlConfigs,
+    PathConverterTypes,
+    ProcessedURL,
+    ProjectReadOutput,
+    ReadOptions,
+    TraverseOptions,
+    UrlArgument
+} from './main.d';
+import { Braces, UtilityClass } from "./utilities";
 
 
 export class ConfigReader {
@@ -41,8 +26,7 @@ export class ConfigReader {
         [ 'slug', 'slug' ], [ 'int', 'integer' ], [ 'str', 'string' ], [ 'uuid', 'UUID' ], [ 'path', 'path' ]
     ]);
 
-    constructor(private errorCallback?: (message: string) => void) {
-    }
+    constructor(private errorCallback?: (message: string) => void) {}
 
     protected typePathConverter(matches: RegExpMatchArray | null): Array<UrlArgument> {
         // get an array of arg matched, convert it to correct format
@@ -85,9 +69,8 @@ export class ConfigReader {
 
         // get URLS from urlpatterns
         try {
-            const urlPatterns = braceReader(formattedText, Braces.SQUARE_BRACKET_OPEN);
-            urls = urlPatterns.map((pattern) => {
-                return braceReader(pattern, Braces.ROUND_BRACKET_OPEN);
+            urls = UtilityClass.braceReader(formattedText, Braces.SQUARE_BRACKET_OPEN).map((pattern) => {
+                return UtilityClass.braceReader(pattern, Braces.ROUND_BRACKET_OPEN);
             }).flat();
         } catch (error) {
             if (error && error instanceof Error && this.errorCallback) {
@@ -201,8 +184,7 @@ export class FilesFinder {
     ];
     projectPath: string | null = null;
 
-    constructor(private errorCallback?: (message: string) => void) {
-    }
+    constructor(private errorCallback?: (message: string) => void) {}
 
     protected traverseDirs(path: string, options: TraverseOptions) {
         let proceed = false;

@@ -1,5 +1,5 @@
-import { ConfigReader, UtilityClass } from "../../reader/main";
-import { braceReader, Braces } from "../../reader/utilities";
+import { ConfigReader } from "../../reader/main";
+import { UtilityClass, Braces } from "../../reader/utilities";
 import * as assert from 'assert';
 import * as data from './main.test.json'
 import { AppUrlConfigs, UrlArgument } from "../../reader/main.d";
@@ -125,18 +125,18 @@ suite('Main Test Suite', () => {
         ];
 
         assert.deepStrictEqual(
-            samples.map(([sample, br]) => braceReader(sample, br)),
+            samples.map(([sample, br]) => UtilityClass.braceReader(sample, br)),
             res2
         );
 
         assert.deepStrictEqual(
-            samples.map(([sample, br]) => braceReader(sample, br, true)),
+            samples.map(([sample, br]) => UtilityClass.braceReader(sample, br, true)),
             res
         );
 
-        assert.throws(() => braceReader('}', Braces.CURLY_BRACKET_CLOSE), TypeError);
+        assert.throws(() => UtilityClass.braceReader('}', Braces.CURLY_BRACKET_CLOSE), TypeError);
 
-        assert.throws(() => braceReader('(sample)', Braces.CURLY_BRACKET_CLOSE), TypeError);
+        assert.throws(() => UtilityClass.braceReader('(sample)', Braces.CURLY_BRACKET_CLOSE), TypeError);
     });
 
     test('Test Models Finder', () => {
