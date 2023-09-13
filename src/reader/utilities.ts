@@ -46,7 +46,7 @@ export function braceReader(text: string, openingBrace: Braces, removeBrace = fa
                 }
 
                 if (incCount < 0) {
-                    throw TypeError('Text contains an invalid braces')
+                    throw TypeError('Text contains an invalid braces');
                 }
                 break;
 
